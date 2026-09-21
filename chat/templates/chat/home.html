@@ -1,0 +1,136 @@
+﻿{% extends "chat/base.html" %}
+{% block content %}
+
+<div class="card">
+  <h2>1. Upload a document</h2>
+  <p class="status">Supported: PDF, DOCX, TXT, MD</p>
+  <form id="upload-form" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row">
+      <input type="file" name="document" accept=".pdf,.docx,.txt,.md" required>
+      <button type="submit" id="upload-btn">Upload &amp; Index</button>
+    </div>
+  </form>
+  <div id="upload-status" class="status"></div>
+</div>
+
+<div class="card">
+  <h2>2. Indexed documents (<span id="source-count">{{ sources|length }}</span> docs, <span id="chunk-count">{{ chunk_count }}</span> chunks)</h2>
+  <ul class="sources" id="sources-list">
+    {% if sources %}
+      {% for s in sources %}
+        <li><span>{{ s }}</span></li>
+      {% endfor %}
+    {% else %}
+      <li style="color: var(--muted);">No documents indexed yet.</li>
+    {% endif %}
+  </ul>
+  <button class="secondary" id="reset-btn" style="margin-top: 8px;">Clear all</button>
+</div>
+
+<div class="card">
+  <h2>3. Ask a question</h2>
+  <form id="ask-form">
+    {% csrf_token %}
+    <div class="row">
+      <input type="text" id="question-input" placeholder="e.g. What is RAG?" autocomplete="off">
+      <button type="submit" id="ask-btn">Ask</button>
+    </div>
+  </form>
+  <div id="answer-area"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+document.getElementById('upload-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('upload-btn');
+  const status = document.getElementById('upload-status');
+  const file = e.target.document.files[0];
+  if (!file) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Uploading...';
+  status.textContent = '';
+  const formData = new FormData();
+  formData.append('document', file);
+  try {
+    const res = await fetch('/upload/', { method: 'POST',
+      headers: { 'X-CSRFToken': csrf }, body: formData });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    status.textContent = 'OK Indexed "' + data.filename + '" - ' + data.chunks_added + ' new chunks, ' + data.total_chunks + ' total.';
+    document.getElementById('chunk-count').textContent = data.total_chunks;
+    refreshSources(data.sources);
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Upload & Index';
+    e.target.reset();
+  }
+});
+
+document.getElementById('ask-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('ask-btn');
+  const input = document.getElementById('question-input');
+  const area = document.getElementById('answer-area');
+  const q = input.value.trim();
+  if (!q) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Thinking...';
+  area.innerHTML = '';
+  try {
+    const res = await fetch('/ask/', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+      body: JSON.stringify({ question: q }) });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    const cites = data.sources.map(s => '<span class="cite">' + s.source + ' - ' + Number(s.score).toFixed(2) + '</span>').join('');
+    area.innerHTML = '<div class="answer">' + escapeHtml(data.answer) + '</div><div>' + cites + '</div>';
+    input.value = '';
+  } catch (err) {
+    area.innerHTML = '<div class="error">Error: ' + escapeHtml(err.message) + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Ask';
+  }
+});
+
+document.getElementById('reset-btn').addEventListener('click', async () => {
+  if (!confirm('Delete all indexed chunks? (Files on disk remain.)')) return;
+  try {
+    const res = await fetch('/reset/', { method: 'POST',
+      headers: { 'X-CSRFToken': csrf } });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Reset failed');
+    document.getElementById('chunk-count').textContent = data.total_chunks;
+    refreshSources(data.sources);
+    document.getElementById('answer-area').innerHTML = '';
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+});
+
+function refreshSources(sources) {
+  const ul = document.getElementById('sources-list');
+  if (!sources || sources.length === 0) {
+    ul.innerHTML = '<li style="color: var(--muted);">No documents indexed yet.</li>';
+    return;
+  }
+  ul.innerHTML = sources.map(s => '<li><span>' + escapeHtml(s) + '</span></li>').join('');
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+}
+
+document.getElementById('source-count').textContent = (data.sources || []).length;
+</script>
+{% endblock %}
