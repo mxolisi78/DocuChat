@@ -98,7 +98,7 @@ responses with citations.
 ### 1. Clone & install
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/DocuChat.git
+git clone https://github.com/mxolisi78/DocuChat.git
 cd DocuChat
 python -m venv venv
 .\venv\Scripts\Activate.ps1
