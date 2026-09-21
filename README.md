@@ -232,11 +232,9 @@ forces good architectural decisions.
 License
 MIT — see LICENSE.
 
-Author
-YOUR_NAME
+## Author
 
-GitHub: @mxolisi78
-
-LinkedIn: Mxolisi Maseko
-
+**Mxolisi Maseko**
+- GitHub: [@mxolisi78](https://github.com/mxolisi78)
+- LinkedIn: [Mxolisi Maseko](https://www.linkedin.com/in/mxolisi-maseko-9810b93a4/)
 text
