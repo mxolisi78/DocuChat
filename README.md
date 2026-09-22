@@ -95,8 +95,6 @@ responses with citations.
 
 ## Setup
 
-## Setup
-
 ### 1. Clone & install
 
 ```powershell
