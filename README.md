@@ -95,6 +95,8 @@ responses with citations.
 
 ## Setup
 
+## Setup
+
 ### 1. Clone & install
 
 ```powershell
@@ -103,16 +105,25 @@ cd DocuChat
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+```
 
-2. Get a Groq API key (free)
-Sign up at https://console.groq.com
+### 2. Get a Groq API key (free)
 
-API Keys → Create API Key
+1. Sign up at https://console.groq.com
+2. Go to **API Keys** → **Create API Key**
+3. Copy the `gsk_...` key
 
-Copy the gsk_... key
+### 3. Configure environment
 
-3. Configure environment
-Create .env at the project root:
+> 💡 Tip: copy `.env.example` to `.env` and fill in your values.
+
+```powershell
+copy .env.example .env
+```
+
+Then open `.env` and set your key:
+
+```env
 LLM_PROVIDER=groq
 GROQ_API_KEY=gsk_your_key_here
 LLM_MODEL=openai/gpt-oss-120b
@@ -124,18 +135,18 @@ TOP_K=4
 
 UPLOAD_DIR=data/uploads
 CHROMA_DIR=data/chroma_db
+```
 
-4. Run
-powershell
+⚠️ **Never commit the real `.env` file.** It contains your API key.
+
+### 4. Run
+
+```powershell
 python manage.py migrate
 python manage.py runserver
-Open http://127.0.0.1:8000/.
+```
 
-4. Run
-powershell
-python manage.py migrate
-python manage.py runserver
-Open http://127.0.0.1:8000/.
+Open **http://127.0.0.1:8000/** in your browser.
 
 Usage
 Upload a PDF, DOCX, TXT, or MD file → wait for the "✓ Indexed" message
